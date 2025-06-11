@@ -1,47 +1,32 @@
 package utils;
 
-import model.Consulta;
-import model.Medico;
-import model.Paciente;
+import model.Exportavel;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Properties;
 
-/**
- * Utilitário para exportar dados de consultas em formato CSV.
- */
 public class CsvWriter {
 
-    /**
-     * Exporta uma lista de consultas para um arquivo CSV.
-     *
-     * @param consultas Lista de consultas a exportar
-     * @param path Caminho do arquivo de saída
-     * @throws IOException Em caso de erro de escrita
-     */
-    public void export(List<Consulta> consultas, String path) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+    public void export(List<Exportavel> lista, String path) throws IOException {
+        Properties props = new Properties();
+        try (InputStream in = CsvWriter.class.getClassLoader().getResourceAsStream("application.properties")) {
+            if (in != null) {
+                props.load(in);
+            }
+        }
+        char delimiter = props.getProperty("csv.delimitador", ",").charAt(0);
 
-            writer.write("CRM,Nome Médico,Especialidade,CPF,Nome Paciente,Data Nascimento,Data Consulta");
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+            // Cabeçalho
+            writer.write(String.join(Character.toString(delimiter), "crm", "cpf", "data", "horario"));
             writer.newLine();
 
-            for (Consulta consulta : consultas) {
-                Medico m = consulta.getMedico();
-                Paciente p = consulta.getPaciente();
-
-                String linha = String.join(",",
-                        m.getCrm(),
-                        m.getNome(),
-                        m.getEspecialidade().name(),
-                        p.getCpf(),
-                        p.getNome(),
-                        p.getDataNascimento().toString(),
-                        consulta.getData().toString()
-                );
-
-                writer.write(linha);
+            for (Exportavel item : lista) {
+                writer.write(item.toCsv());
                 writer.newLine();
             }
         }

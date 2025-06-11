@@ -1,24 +1,47 @@
 package model;
 
+import java.io.InputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Objects;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Properties;
 
-/**
- * Representa uma consulta médica entre um paciente e um médico.
- */
-public class Consulta implements Serializable {
-
+public class Consulta extends Pessoa implements Exportavel, Serializable {
     private static final long serialVersionUID = 1L;
 
     private Medico medico;
     private Paciente paciente;
     private LocalDate data;
+    private LocalTime horario;
 
-    public Consulta(Medico medico, Paciente paciente, LocalDate data) {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final char DELIMITER;
+
+    static {
+        char d = ',';
+        try (InputStream in = Consulta.class.getClassLoader().getResourceAsStream("application.properties")) {
+            if (in != null) {
+                Properties props = new Properties();
+                props.load(in);
+                d = props.getProperty("csv.delimitador").charAt(0);
+            }
+        } catch (IOException e) {
+            // mantém vírgula se falhar
+        }
+        DELIMITER = d;
+    }
+
+    public Consulta() {}
+
+    public Consulta(Medico medico, Paciente paciente, LocalDate data, LocalTime horario) {
+        super();
         this.medico = medico;
         this.paciente = paciente;
         this.data = data;
+        this.horario = horario;
     }
 
     public Medico getMedico() {
@@ -45,31 +68,30 @@ public class Consulta implements Serializable {
         this.data = data;
     }
 
-    /**
-     * Retorna um resumo da consulta no formato:
-     * "CRM: {crm} | Paciente: {nome} | Data: {data}"
-     */
+    public LocalTime getHorario() {
+        return horario;
+    }
+
+    public void setHorario(LocalTime horario) {
+        this.horario = horario;
+    }
+
     public String getResumo() {
-        return String.format(
-                "CRM: %s | Paciente: %s | Data: %s",
-                medico != null ? medico.getCrm() : "N/A",
-                paciente != null ? paciente.getNome() : "N/A",
-                data != null ? data.toString() : "N/A"
+        return String.format("CRM:%s | Paciente:%s | Data:%s Hora:%s",
+            medico.getCrm(),
+            paciente.getCpf(),
+            data.format(DATE_FORMATTER),
+            horario.format(TIME_FORMATTER)
         );
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Consulta)) return false;
-        Consulta other = (Consulta) obj;
-        return Objects.equals(medico, other.medico)
-                && Objects.equals(paciente, other.paciente)
-                && Objects.equals(data, other.data);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(medico, paciente, data);
+    public String toCsv() {
+        return String.join(Character.toString(DELIMITER),
+            medico.getCrm(),
+            paciente.getCpf(),
+            data.format(DATE_FORMATTER),
+            horario.format(TIME_FORMATTER)
+        );
     }
 }

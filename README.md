@@ -1,99 +1,108 @@
 # 🩺 TrabalhoRA3 – Sistema de Consultas Médicas (POO)
 
-Este projeto simula um sistema de **gestão de consultas médicas**, desenvolvido para o Trabalho RA3 da disciplina de **Programação Orientada a Objetos (POO)**. Ele permite **importar dados de consultas via CSV**, **armazenar em binário**, realizar **buscas com filtros**, e **exportar resultados** com interface gráfica em **JavaFX**.
+## Visão Geral
 
----
+Aplicação desktop desenvolvida em Java Swing para gerenciar consultas médicas e de pacientes.
+Permite:
 
-## 📁 Estrutura do Projeto
+* Carregar dados de médicos e pacientes a partir de CSV
+* Importar consultas (CSV → objetos) e persistir em binário
+* Buscar consultas por CRM, CPF, data e meses sem atendimento
+* Exportar resultados parciais e relatório final em CSV
+
+## Pré-requisitos
+
+* JDK 11 ou superior instalado
+* Diretório de trabalho contendo:
+
+  * `application.properties`
+  * `medicos.csv`
+  * `pacientes.csv`
+  * `consultas.csv`
+
+## Estrutura de Pastas
 
 ```
 TrabalhoRA3/
-├── pom.xml
-├── README.md
 ├── src/
-│   ├── model/               # Classes de domínio
-│   │   ├─ Medico.java
-│   │   ├─ Paciente.java
-│   │   └─ Consulta.java
-│   │
-│   ├── exceptions/          # Exceções personalizadas
-│   │   ├─ ArquivoInvalidoException.java
-│   │   ├─ PersistenciaException.java
-│   │   └─ BuscaInvalidaException.java
-│   │
-│   ├── persistence/         # Persistência CSV e binária
-│   │   └─ ArquivoService.java
-│   │
-│   ├── utils/               # Escrita de CSV
-│   │   └─ CsvWriter.java
-│   │
-│   ├── controller/          # Lógica de controle
-│   │   └─ ConsultaController.java
-│   │
-│   ├── view/                # Interface gráfica JavaFX
-│   │   └─ MainApp.java
-│   │
-│   └── application.properties
-│
-└── docs/
-    ├─ diagrama-classe.png
-    └─ manual_uso.md
+│   ├── model/             # Pessoa, Medico, Paciente, Consulta, Exportavel
+│   ├── exceptions/        # ArquivoInvalidoException, PersistenciaException, BuscaInvalidaException
+│   ├── persistence/       # ArquivoService
+│   ├── utils/             # CsvWriter
+│   ├── controller/        # ConsultaController
+│   └── view/              # MainApp.java (Swing UI)
+├── application.properties
+├── medicos.csv
+├── pacientes.csv
+└── consultas.csv
 ```
 
----
+## Configuração (`application.properties`)
 
-## 🚀 Como Executar
+```properties
+medicos.csv=medicos.csv
+pacientes.csv=pacientes.csv
+consultas.csv=consultas.csv
+csv.delimitador=,
+formato.data=dd/MM/yyyy
+formato.hora=HH:mm
+```
 
-### 1. Pré-requisitos
+## Compilação e Execução
 
-- Java 17
-- Maven 3.8+
-- JavaFX SDK (caso não esteja embutido via plugin)
----
+```bash
+# Compilar todas as classes
+javac -d bin src/**/*.java
 
-## ✨ Funcionalidades
+# Executar a aplicação
+java -cp bin:. view.MainApp
+```
 
-- 📥 **Importar** dados de consultas a partir de um arquivo CSV.
-- 💾 **Gravar** e **recuperar** a lista de consultas em formato binário (`.dat`).
-- 🔍 **Buscar** consultas por médico, paciente ou data.
-- 📤 **Exportar** os resultados da busca para novo arquivo CSV.
-- 🧩 Interface amigável com campos de busca e botões de ação.
-- 🔐 **Tratamento de erros** com exceções específicas.
+## Fluxo de Uso
 
----
+1. **Carga inicial**: ao iniciar, lê `medicos.csv`, `pacientes.csv` e `consultas.csv`, instancia objetos e grava `consultas.bin`.
+2. **Busca Médico**: na aba, insira o CRM e clique em Buscar; exibe resultados em tabela; clique em Exportar CSV para `busca_medico.csv`.
+3. **Busca Paciente**: insira o CPF, clique em Buscar; exibe resultados; clique em Exportar CSV para `busca_paciente.csv`.
+4. **Relatório Final**: botão “Gerar Relatório Final” concatena todas as consultas em `relatorio_final.csv`.
 
-## 🧾 Formato do CSV de Entrada
+## Detalhes Técnicos
 
-O CSV deve conter o seguinte cabeçalho:
+* **Modelo de Domínio**: `Pessoa` abstrata, `Medico` e `Paciente` estendem, usando herança e encapsulamento.
+* **Polimorfismo**: interface `Exportavel` implementada por `Consulta` para exportação genérica.
+* **Persistência**: classe `ArquivoService` com leitura/escrita de CSV e serialização binária (`Serializable`).
+* **Tratamento de Erros**: exceções customizadas (`ArquivoInvalidoException`, `PersistenciaException`, `BuscaInvalidaException`).
+* **UI**: Java Swing, `JTabbedPane`, formulários com `JTextField`, `JTable` e feedback via `JOptionPane`.
+
+## Exemplos de CSV
+
+**medicos.csv**
 
 ```csv
-CRM,Nome Médico,Especialidade,CPF,Nome Paciente,Data Nascimento,Data Consulta
-```
+crm,nome,especialidade
+CRM1001,João da Silva,PEDIATRA
+CRM1002,Maria dos Santos,DERMATOLOGISTA
+...```
 
-### 📌 Exemplo de linha válida:
-
+**pacientes.csv**
 ```csv
-12345,João Silva,Cardiologista,11122233344,Maria Oliveira,1980-10-22,2023-11-15
-```
+cpf,nome,dataNascimento
+106977991,Gustavo Ramos,08/07/2007
+126855092,Rafael Barros,14/10/1954
+...```
 
-> As datas devem seguir o padrão **YYYY-MM-DD** (ISO).
+**consultas.csv**
+```csv
+crm,cpf,data,horario
+CRM1001,106977991,15/03/2024,09:30
+CRM1002,126855092,22/05/2024,14:15
+...```
 
----
+## Uso
+1. **Preparar**: remova arquivos binários antigos (`consultas.bin`, `busca_*.csv`, `relatorio_final.csv`).
+2. **Compilar**: execute `javac -d bin src/**/*.java`.
+3. **Iniciar**: execute `java -cp bin:. view.MainApp`.
+4. **Buscar Médico**: teste CRM existente e vazio.
+5. **Buscar Paciente**: teste CPF existente e vazio.
+6. **Gerar Relatório Final**: verifique `relatorio_final.csv`.
+7. **Validar**: abra CSVs gerados e compare formatos e dados.
 
-## 🛠️ Tecnologias e Estilo
-
-- Java 17
-- JavaFX
-- Maven
-- Google Java Style Guide
-- Arquitetura MVC
-
----
-
-## ⚠️ Exceções Tratadas
-
-| Classe                        | Quando é lançada                                       |
-|------------------------------|--------------------------------------------------------|
-| `ArquivoInvalidoException`   | Arquivo CSV mal-formado ou com campos inválidos       |
-| `PersistenciaException`      | Erros ao ler ou gravar arquivos binários              |
-| `BuscaInvalidaException`     | Parâmetros de busca inconsistentes                    |

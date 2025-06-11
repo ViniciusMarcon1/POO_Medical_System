@@ -1,92 +1,87 @@
 package controller;
 
-import exceptions.BuscaInvalidaException;
+import exceptions.ArquivoInvalidoException;
 import exceptions.PersistenciaException;
+import exceptions.BuscaInvalidaException;
 import model.Consulta;
+import model.Exportavel;
 import persistence.ArquivoService;
 import utils.CsvWriter;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
-/**
- * Controlador responsável por carregar dados, buscar e exportar resultados.
- */
 public class ConsultaController {
-
-    private final ArquivoService arquivoService;
-    private final CsvWriter csvWriter;
-    private List<Consulta> todasConsultas;
+    private List<Consulta> consultas = new ArrayList<>();
+    private final ArquivoService service;
 
     public ConsultaController() {
-        this.arquivoService = new ArquivoService();
-        this.csvWriter = new CsvWriter();
-        this.todasConsultas = new ArrayList<>();
+        try {
+            service = new ArquivoService();
+        } catch (PersistenciaException e) {
+            throw new RuntimeException("Falha ao inicializar ArquivoService", e);
+        }
     }
 
-    /**
-     * Carrega a lista de consultas salvas em binário.
-     *
-     * @param binPath caminho do arquivo binário
-     * @throws PersistenciaException em caso de erro de leitura
-     */
     public void loadData(String binPath) throws PersistenciaException {
-        this.todasConsultas = arquivoService.readBinary(binPath);
-    }
-
-    /**
-     * Filtra a lista de consultas com base nos critérios informados.
-     *
-     * @param nomeMedico nome do médico (pode ser nulo ou vazio)
-     * @param nomePaciente nome do paciente (pode ser nulo ou vazio)
-     * @param data consulta na data exata (pode ser nula)
-     * @return lista filtrada de consultas
-     * @throws BuscaInvalidaException se nenhum filtro for informado
-     */
-    public List<Consulta> buscar(String nomeMedico, String nomePaciente, LocalDate data)
-            throws BuscaInvalidaException {
-
-        if ((nomeMedico == null || nomeMedico.isBlank()) &&
-                (nomePaciente == null || nomePaciente.isBlank()) &&
-                data == null) {
-            throw new BuscaInvalidaException("Pelo menos um filtro deve ser informado.");
-        }
-
-        List<Consulta> resultado = new ArrayList<>();
-
-        for (Consulta c : todasConsultas) {
-            boolean match = true;
-
-            if (nomeMedico != null && !nomeMedico.isBlank()) {
-                match &= c.getMedico().getNome().toLowerCase().contains(nomeMedico.toLowerCase());
-            }
-
-            if (nomePaciente != null && !nomePaciente.isBlank()) {
-                match &= c.getPaciente().getNome().toLowerCase().contains(nomePaciente.toLowerCase());
-            }
-
-            if (data != null) {
-                match &= c.getData().equals(data);
-            }
-
-            if (match) {
-                resultado.add(c);
+        try {
+            consultas = service.readBinary(binPath);
+        } catch (PersistenciaException e) {
+            // Sem binário, carrega CSV e grava binário
+            try {
+                Properties props = new Properties();
+                try (InputStream in = getClass().getClassLoader().getResourceAsStream("application.properties")) {
+                    if (in == null) throw new IOException("application.properties não encontrado");
+                    props.load(in);
+                }
+                String csvPath = props.getProperty("consultas.csv");
+                consultas = service.readCsv(csvPath);
+                service.writeBinary(consultas, binPath);
+            } catch (IOException | ArquivoInvalidoException ex) {
+                throw new PersistenciaException("Erro ao carregar dados: " + ex.getMessage(), ex);
             }
         }
-
-        return resultado;
     }
 
-    /**
-     * Exporta uma lista de consultas para arquivo CSV.
-     *
-     * @param resultado lista a exportar
-     * @param outPath caminho de saída
-     * @throws IOException em caso de falha de escrita
-     */
+    public List<Consulta> buscar(String crm, String cpf,
+                                 LocalDate dataInicial, LocalDate dataFinal,
+                                 Integer mesesSemConsulta) throws BuscaInvalidaException {
+        if ((crm == null || crm.isBlank()) && (cpf == null || cpf.isBlank())
+                && dataInicial == null && dataFinal == null && mesesSemConsulta == null) {
+            throw new BuscaInvalidaException("Pelo menos um parâmetro deve ser informado");
+        }
+        LocalDate hoje = LocalDate.now();
+        return consultas.stream()
+                .filter(c -> crm == null || crm.isBlank() || c.getMedico().getCrm().equals(crm))
+                .filter(c -> cpf == null || cpf.isBlank() || c.getPaciente().getCpf().equals(cpf))
+                .filter(c -> dataInicial == null || !c.getData().isBefore(dataInicial))
+                .filter(c -> dataFinal == null || !c.getData().isAfter(dataFinal))
+                .filter(c -> mesesSemConsulta == null || c.getData().isBefore(hoje.minusMonths(mesesSemConsulta)))
+                .sorted(Comparator.comparing(Consulta::getData)
+                                  .thenComparing(Consulta::getHorario))
+                .collect(Collectors.toList());
+    }
+
     public void exportarCsv(List<Consulta> resultado, String outPath) throws IOException {
-        csvWriter.export(resultado, outPath);
+        List<Exportavel> exportList = new ArrayList<>(resultado);
+        new CsvWriter().export(exportList, outPath);
+    }
+
+    public List<Consulta> getAllConsultas() {
+        return new ArrayList<>(consultas);
+    }
+
+    public void consolidarRelatorio(List<List<Consulta>> resultadosParciais, String relatorioPath) throws IOException {
+        List<Exportavel> exportList = resultadosParciais.stream()
+                .flatMap(List::stream)
+                .map(c -> (Exportavel) c)
+                .collect(Collectors.toList());
+        new CsvWriter().export(exportList, relatorioPath);
     }
 }

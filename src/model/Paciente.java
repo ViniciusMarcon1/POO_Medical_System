@@ -4,20 +4,17 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/**
- * Representa um paciente com CPF, nome e data de nascimento.
- */
-public class Paciente implements Serializable {
-
+public class Paciente extends Pessoa implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String cpf;
-    private String nome;
     private LocalDate dataNascimento;
 
-    public Paciente(String cpf, String nome, LocalDate dataNascimento) {
+    public Paciente() { super(); }
+
+    public Paciente(String nome, String cpf, LocalDate dataNascimento) {
+        super(nome);
         this.cpf = cpf;
-        this.nome = nome;
         this.dataNascimento = dataNascimento;
     }
 
@@ -29,14 +26,6 @@ public class Paciente implements Serializable {
         this.cpf = cpf;
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
     public LocalDate getDataNascimento() {
         return dataNascimento;
     }
@@ -46,11 +35,11 @@ public class Paciente implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Paciente)) return false;
-        Paciente other = (Paciente) obj;
-        return Objects.equals(cpf, other.cpf);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Paciente)) return false;
+        Paciente paciente = (Paciente) o;
+        return Objects.equals(cpf, paciente.cpf);
     }
 
     @Override

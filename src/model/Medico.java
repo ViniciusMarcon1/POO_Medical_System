@@ -3,12 +3,11 @@ package model;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Representa um médico com CRM, nome e especialidade.
- */
-public class Medico implements Serializable {
-
+public class Medico extends Pessoa implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private String crm;
+    private Especialidade especialidade;
 
     public enum Especialidade {
         CLINICO_GERAL,
@@ -20,13 +19,11 @@ public class Medico implements Serializable {
         PSIQUIATRA
     }
 
-    private String crm;
-    private String nome;
-    private Especialidade especialidade;
+    public Medico() { super(); }
 
-    public Medico(String crm, String nome, Especialidade especialidade) {
+    public Medico(String nome, String crm, Especialidade especialidade) {
+        super(nome);
         this.crm = crm;
-        this.nome = nome;
         this.especialidade = especialidade;
     }
 
@@ -38,14 +35,6 @@ public class Medico implements Serializable {
         this.crm = crm;
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
     public Especialidade getEspecialidade() {
         return especialidade;
     }
@@ -55,11 +44,11 @@ public class Medico implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Medico)) return false;
-        Medico other = (Medico) obj;
-        return Objects.equals(crm, other.crm);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Medico)) return false;
+        Medico medico = (Medico) o;
+        return Objects.equals(crm, medico.crm);
     }
 
     @Override
