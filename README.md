@@ -80,21 +80,24 @@ java -cp bin:. view.MainApp
 crm,nome,especialidade
 CRM1001,João da Silva,PEDIATRA
 CRM1002,Maria dos Santos,DERMATOLOGISTA
-...```
+...
+```
 
 **pacientes.csv**
 ```csv
 cpf,nome,dataNascimento
 106977991,Gustavo Ramos,08/07/2007
 126855092,Rafael Barros,14/10/1954
-...```
+...
+```
 
 **consultas.csv**
 ```csv
 crm,cpf,data,horario
 CRM1001,106977991,15/03/2024,09:30
 CRM1002,126855092,22/05/2024,14:15
-...```
+...
+```
 
 ## Uso
 1. **Preparar**: remova arquivos binários antigos (`consultas.bin`, `busca_*.csv`, `relatorio_final.csv`).
