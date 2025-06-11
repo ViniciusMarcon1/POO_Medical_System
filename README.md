@@ -76,7 +76,6 @@ java -cp bin:. view.MainApp
 ## Exemplos de CSV
 
 **medicos.csv**
-
 ```csv
 crm,nome,especialidade
 CRM1001,João da Silva,PEDIATRA
